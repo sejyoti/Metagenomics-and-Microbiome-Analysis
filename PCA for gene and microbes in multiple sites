@@ -1,0 +1,65 @@
+# 📦 Install necessary libraries
+!pip install -q matplotlib seaborn scikit-learn pandas
+
+# 📚 Imports
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# 📁 Load the CSVs
+gene_df = pd.read_csv("x.csv")
+microbe_df = pd.read_csv("y.csv")
+
+# 🎯 Remove identifier columns and transpose to get sites as rows
+gene_sites = gene_df.drop(columns=['Organism_gene', 'saccver']).T
+microbe_sites = microbe_df.drop(columns=['Microbe Name', 'Saccver']).T
+
+# 🧭 Set proper site names as index
+gene_sites.index.name = 'Site'
+microbe_sites.index.name = 'Site'
+
+# ⚙️ Standardize the data
+gene_scaled = StandardScaler().fit_transform(gene_sites)
+microbe_scaled = StandardScaler().fit_transform(microbe_sites)
+
+# 🔍 Run PCA
+pca_gene = PCA(n_components=2)
+pca_microbe = PCA(n_components=2)
+
+gene_pca_result = pca_gene.fit_transform(gene_scaled)
+microbe_pca_result = pca_microbe.fit_transform(microbe_scaled)
+
+# 🧬 Create DataFrames for plotting
+gene_pca_df = pd.DataFrame(gene_pca_result, columns=['PC1', 'PC2'])
+gene_pca_df['Site'] = gene_sites.index
+
+microbe_pca_df = pd.DataFrame(microbe_pca_result, columns=['PC1', 'PC2'])
+microbe_pca_df['Site'] = microbe_sites.index
+
+# 🎨 Plot PCA - clear, large layout
+plt.figure(figsize=(18, 8))
+
+# PCA for genes
+plt.subplot(1, 2, 1)
+sns.scatterplot(data=gene_pca_df, x='PC1', y='PC2', hue='Site', s=200, palette='tab10')
+for i, row in gene_pca_df.iterrows():
+    plt.text(row['PC1'] + 0.5, row['PC2'], row['Site'], fontsize=12)
+plt.title('PCA of Sample Sites Based on Gene Frequencies', fontsize=16)
+plt.xlabel(f'PC1 ({pca_gene.explained_variance_ratio_[0]*100:.1f}%)', fontsize=14)
+plt.ylabel(f'PC2 ({pca_gene.explained_variance_ratio_[1]*100:.1f}%)', fontsize=14)
+plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1), fontsize=12)
+
+# PCA for microbes
+plt.subplot(1, 2, 2)
+sns.scatterplot(data=microbe_pca_df, x='PC1', y='PC2', hue='Site', s=200, palette='tab10')
+for i, row in microbe_pca_df.iterrows():
+    plt.text(row['PC1'] + 0.5, row['PC2'], row['Site'], fontsize=12)
+plt.title('PCA of Sample Sites Based on Microbe Frequencies', fontsize=16)
+plt.xlabel(f'PC1 ({pca_microbe.explained_variance_ratio_[0]*100:.1f}%)', fontsize=14)
+plt.ylabel(f'PC2 ({pca_microbe.explained_variance_ratio_[1]*100:.1f}%)', fontsize=14)
+plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1), fontsize=12)
+
+plt.tight_layout()
+plt.show()
